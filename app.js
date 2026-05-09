@@ -3,14 +3,30 @@ const { adminAuth, userAuth } = require('./middlewares/auth');
 
 const app = express();
 
+
+
 app.use("/admin",adminAuth,(req,res,next)=>{
 console.log('admin route accessed');
 res.send('welcome admin!');
 });
 
+app.use('/user/getdata',(req,res)=>{
+    throw new Error('Something went wrong while fetching user data!');
+    res.send('welcome user to get data!',{name:'john',age:30});
+});
+
 app.use("/user",userAuth,(req,res,next)=>{
 console.log('user route accessed');
     res.send('welcome user!');
+});
+
+app.use("/",(err,req,res,next)=>{
+    if(err){
+        console.error(err.stack);
+        res.status(500).send('Something went wrong!');
+    } else {
+        next();
+    }
 });
 
 // app.use('/user',[(req,res,next)=>{
