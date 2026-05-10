@@ -1,33 +1,54 @@
 const express = require('express');
+const connectDB = require('./config/database');
 const { adminAuth, userAuth } = require('./middlewares/auth');
+const User = require('./models/user');
 
 const app = express();
 
-
-
-app.use("/admin",adminAuth,(req,res,next)=>{
-console.log('admin route accessed');
-res.send('welcome admin!');
+connectDB().then(() => {
+    console.log('Database connected successfully');
+    app.listen(3000, () => {
+        console.log('Server started listening on port:3000');
+    });
+}).catch((error) => {
+    console.error('Database connection failed:', error);
 });
 
-app.use('/user/getdata',(req,res)=>{
-    throw new Error('Something went wrong while fetching user data!');
-    res.send('welcome user to get data!',{name:'john',age:30});
+app.post("/signup",async (req,res)=>{
+    const user = new User({
+        firstName:'Ramachandra',
+        lastName:'Test',
+        email:'Ramachandra.test@example.com',
+        password:'password123'
+    });
+    await user.save();
+    res.send('user created successfully!');
 });
 
-app.use("/user",userAuth,(req,res,next)=>{
-console.log('user route accessed');
-    res.send('welcome user!');
-});
 
-app.use("/",(err,req,res,next)=>{
-    if(err){
-        console.error(err.stack);
-        res.status(500).send('Something went wrong!');
-    } else {
-        next();
-    }
-});
+// app.use("/admin",adminAuth,(req,res,next)=>{
+// console.log('admin route accessed');
+// res.send('welcome admin!');
+// });
+
+// app.use('/user/getdata',(req,res)=>{
+//     throw new Error('Something went wrong while fetching user data!');
+//     res.send('welcome user to get data!',{name:'john',age:30});
+// });
+
+// app.use("/user",userAuth,(req,res,next)=>{
+// console.log('user route accessed');
+//     res.send('welcome user!');
+// });
+
+// app.use("/",(err,req,res,next)=>{
+//     if(err){
+//         console.error(err.stack);
+//         res.status(500).send('Something went wrong!');
+//     } else {
+//         next();
+//     }
+// });
 
 // app.use('/user',[(req,res,next)=>{
 //     console.log('first ');
@@ -65,6 +86,4 @@ app.use("/",(err,req,res,next)=>{
 // app.use('/',(req,res)=>{
 // res.send('welcome to home!');
 // });
-app.listen(3000,()=>{
-    console.log('server started listening on port:3000');
-});
+
