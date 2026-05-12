@@ -23,6 +23,35 @@ app.post("/signup",async (req,res)=>{
     res.send('user created successfully!');
 });
 
+// get user by email Id
+// http://localhost:3000/users/example@example.com
+app.get("/users/:email",async (req,res)=>{
+    try {
+        const user = await User.findOne({email:req.params.email});
+        if(!user){
+            return res.status(404).send('User not found');
+        }   
+        res.send(user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).send('Error fetching user');
+    }
+});
+
+// get all users feed api
+// http://localhost:3000/users
+app.get("/users",async (req,res)=>{
+    try {
+        const users = await User.find();
+        if(users.length === 0){
+            return res.status(404).send('No users found');
+        }   
+        res.send(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).send('Error fetching users');
+    }
+});
 
 // app.use("/admin",adminAuth,(req,res,next)=>{
 // console.log('admin route accessed');
