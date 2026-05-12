@@ -24,7 +24,7 @@ app.post("/signup",async (req,res)=>{
 });
 
 // get user by email Id
-// http://localhost:3000/users/example@example.com
+// http://localhost:3000/users/john.doe@example.com
 app.get("/users/:email",async (req,res)=>{
     try {
         const user = await User.findOne({email:req.params.email});
@@ -37,6 +37,55 @@ app.get("/users/:email",async (req,res)=>{
         res.status(500).send('Error fetching user');
     }
 });
+
+// update user by userId
+// http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
+app.patch("/users/:id",async (req,res)=>{
+    try {
+        const user = await User.findByIdAndUpdate(req.params.id,req.body,{new:true});
+        if(!user){
+            return res.status(404).send('User not found');
+        } 
+        console.log('updated user:',user);      
+        res.send(user);
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).send('Error updating user');
+    }
+});
+
+// update user by email Id
+// http://localhost:3000/users/email/john.doe@example.com
+app.patch("/users/email/:email",async (req,res)=>{
+    try {
+        const email = decodeURIComponent(req.params.email);
+        console.log('req.params.email,req.body-----',email,req.body);
+        const user = await User.findOneAndUpdate({email},req.body,{new:true});
+        if(!user){
+            return res.status(404).send('User not found');
+        } 
+        console.log('updated user:',user);      
+        res.send(user);
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).send('Error updating user');
+    }
+}); 
+
+// delete user by userId
+// http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
+app.delete("/users/:id",async (req,res)=>{
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if(!user){
+            return res.status(404).send('User not found');
+        }
+        res.send('User deleted successfully');
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).send('Error deleting user');
+    }
+}); 
 
 // get all users feed api
 // http://localhost:3000/users
