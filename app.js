@@ -5,6 +5,8 @@ const User = require('./models/user');
 
 const app = express();
 
+app.use(express.json());
+
 connectDB().then(() => {
     console.log('Database connected successfully');
     app.listen(3000, () => {
@@ -15,12 +17,8 @@ connectDB().then(() => {
 });
 
 app.post("/signup",async (req,res)=>{
-    const user = new User({
-        firstName:'Ramachandra',
-        lastName:'Test',
-        email:'Ramachandra.test@example.com',
-        password:'password123'
-    });
+    console.log('signup route accessed-----',req.body);
+    const user = new User(req.body);
     await user.save();
     res.send('user created successfully!');
 });
