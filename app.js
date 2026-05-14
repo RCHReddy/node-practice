@@ -18,9 +18,14 @@ connectDB().then(() => {
 
 app.post("/signup",async (req,res)=>{
     console.log('signup route accessed-----',req.body);
-    const user = new User(req.body);
-    await user.save();
-    res.send('user created successfully!');
+    try {
+        const user = new User(req.body);
+        await user.save();
+        res.send('user created successfully!');
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).send('Error creating user'+error.message);
+    }       
 });
 
 // get user by email Id
@@ -42,6 +47,12 @@ app.get("/users/:email",async (req,res)=>{
 // http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
 app.patch("/users/:id",async (req,res)=>{
     try {
+        const ALLOWED_UPDATES = ['name','password','age','photo','about','gender'];
+        const updates = Object.keys(req.body);
+        const isValidOperation = updates.every((update) => ALLOWED_UPDATES.includes(update));
+        if (!isValidOperation) {
+            return res.status(400).send('Invalid update fields');
+        }
         const user = await User.findByIdAndUpdate(req.params.id,req.body,{new:true});
         if(!user){
             return res.status(404).send('User not found');
@@ -60,15 +71,15 @@ app.patch("/users/email/:email",async (req,res)=>{
     try {
         const email = decodeURIComponent(req.params.email);
         console.log('req.params.email,req.body-----',email,req.body);
-        const user = await User.findOneAndUpdate({email},req.body,{new:true});
+        const user = await User.findOneAndUpdate({email},req.body,{new:true,runValidators:true});
         if(!user){
             return res.status(404).send('User not found');
         } 
         console.log('updated user:',user);      
         res.send(user);
     } catch (error) {
-        console.error('Error updating user:', error);
-        res.status(500).send('Error updating user');
+        console.error('Error updating user:', error.message);
+        res.status(400).send({ error: error.message });
     }
 }); 
 
