@@ -1,116 +1,169 @@
-const express = require('express');
-const connectDB = require('./config/database');
-const { adminAuth, userAuth } = require('./middlewares/auth');
-const User = require('./models/user');
+const express = require("express");
+const connectDB = require("./config/database");
+const { adminAuth, userAuth } = require("./middlewares/auth");
+const User = require("./models/user");
+const bcrypt = require("bcrypt");
+const { validatePayload } = require("./utils/validate");
 
 const app = express();
 
 app.use(express.json());
 
-connectDB().then(() => {
-    console.log('Database connected successfully');
+connectDB()
+  .then(() => {
+    console.log("Database connected successfully");
     app.listen(3000, () => {
-        console.log('Server started listening on port:3000');
+      console.log("Server started listening on port:3000");
     });
-}).catch((error) => {
-    console.error('Database connection failed:', error);
-});
+  })
+  .catch((error) => {
+    console.error("Database connection failed:", error);
+  });
 
-app.post("/signup",async (req,res)=>{
-    console.log('signup route accessed-----',req.body);
-    try {
-        const user = new User(req.body);
-        await user.save();
-        res.send('user created successfully!');
-    } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(500).send('Error creating user'+error.message);
-    }       
+app.post("/signup", async (req, res) => {
+  console.log("signup route accessed-----", req.body);
+
+  try {
+    const { firstName, lastName, email, password } = req.body;
+    validatePayload
+    const errors = validatePayload({ firstName, lastName, email, password });
+
+    if (errors) {
+      return res.status(400).send(errors);
+    }
+
+    // hash password before saving to database using bcrypt npm package
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({ firstName, lastName, email, password: hashedPassword });
+    await user.save();
+    res.send("user created successfully!");
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).send("Error creating user" + error.message);
+  }
 });
+// login user by email and password
+// http://localhost:3000/login
+app.post("/login", async (req, res) => {    
+  console.log("login route accessed-----", req.body);
+  try {
+    const { email, password } = req.body;
+    //  fetch user by email from database
+    const user = await User.findOne({ email }); 
+    // if user not found, return error
+    if (!user) {
+      return res.status(404).send("User not found");
+    } 
+    // compare password with hashed password in database using bcrypt npm package
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).send("Invalid password");
+    }   
+    res.send("User logged in successfully!"); 
+} catch (error) {
+    console.error("Error logging in user:", error);
+    res.status(500).send("Error logging in user" + error.message);
+  } 
+});            
 
 // get user by email Id
 // http://localhost:3000/users/john.doe@example.com
-app.get("/users/:email",async (req,res)=>{
-    try {
-        const user = await User.findOne({email:req.params.email});
-        if(!user){
-            return res.status(404).send('User not found');
-        }   
-        res.send(user);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        res.status(500).send('Error fetching user');
+app.get("/users/:email", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.params.email });
+    if (!user) {
+      return res.status(404).send("User not found");
     }
+    res.send(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).send("Error fetching user");
+  }
 });
 
 // update user by userId
 // http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
-app.patch("/users/:id",async (req,res)=>{
-    try {
-        const ALLOWED_UPDATES = ['name','password','age','photo','about','gender'];
-        const updates = Object.keys(req.body);
-        const isValidOperation = updates.every((update) => ALLOWED_UPDATES.includes(update));
-        if (!isValidOperation) {
-            return res.status(400).send('Invalid update fields');
-        }
-        const user = await User.findByIdAndUpdate(req.params.id,req.body,{new:true});
-        if(!user){
-            return res.status(404).send('User not found');
-        } 
-        console.log('updated user:',user);      
-        res.send(user);
-    } catch (error) {
-        console.error('Error updating user:', error);
-        res.status(500).send('Error updating user');
+app.patch("/users/:id", async (req, res) => {
+  try {
+    const ALLOWED_UPDATES = [
+      "name",
+      "password",
+      "age",
+      "photo",
+      "about",
+      "gender",
+    ];
+    const updates = Object.keys(req.body);
+    const isValidOperation = updates.every((update) =>
+      ALLOWED_UPDATES.includes(update),
+    );
+    if (!isValidOperation) {
+      return res.status(400).send("Invalid update fields");
     }
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    console.log("updated user:", user);
+    res.send(user);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).send("Error updating user");
+  }
 });
 
 // update user by email Id
 // http://localhost:3000/users/email/john.doe@example.com
-app.patch("/users/email/:email",async (req,res)=>{
-    try {
-        const email = decodeURIComponent(req.params.email);
-        console.log('req.params.email,req.body-----',email,req.body);
-        const user = await User.findOneAndUpdate({email},req.body,{new:true,runValidators:true});
-        if(!user){
-            return res.status(404).send('User not found');
-        } 
-        console.log('updated user:',user);      
-        res.send(user);
-    } catch (error) {
-        console.error('Error updating user:', error.message);
-        res.status(400).send({ error: error.message });
+app.patch("/users/email/:email", async (req, res) => {
+  try {
+    const email = decodeURIComponent(req.params.email);
+    console.log("req.params.email,req.body-----", email, req.body);
+    const user = await User.findOneAndUpdate({ email }, req.body, {
+      new: true,
+      runValidators: true,
+    });
+    if (!user) {
+      return res.status(404).send("User not found");
     }
-}); 
+    console.log("updated user:", user);
+    res.send(user);
+  } catch (error) {
+    console.error("Error updating user:", error.message);
+    res.status(400).send({ error: error.message });
+  }
+});
 
 // delete user by userId
 // http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
-app.delete("/users/:id",async (req,res)=>{
-    try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if(!user){
-            return res.status(404).send('User not found');
-        }
-        res.send('User deleted successfully');
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        res.status(500).send('Error deleting user');
+app.delete("/users/:id", async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).send("User not found");
     }
-}); 
+    res.send("User deleted successfully");
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).send("Error deleting user");
+  }
+});
 
 // get all users feed api
 // http://localhost:3000/users
-app.get("/users",async (req,res)=>{
-    try {
-        const users = await User.find();
-        if(users.length === 0){
-            return res.status(404).send('No users found');
-        }   
-        res.send(users);
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).send('Error fetching users');
+app.get("/users", async (req, res) => {
+  try {
+    const users = await User.find();
+    if (users.length === 0) {
+      return res.status(404).send("No users found");
     }
+    res.send(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).send("Error fetching users");
+  }
 });
 
 // app.use("/admin",adminAuth,(req,res,next)=>{
@@ -146,7 +199,7 @@ app.get("/users",async (req,res)=>{
 // }],(req,res,next)=>{
 //     next();
 //     console.log('third');
-    
+
 //    res.send('hello world! 3rd method');
 //    //next();
 // },
@@ -173,4 +226,3 @@ app.get("/users",async (req,res)=>{
 // app.use('/',(req,res)=>{
 // res.send('welcome to home!');
 // });
-
