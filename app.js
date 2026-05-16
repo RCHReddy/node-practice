@@ -59,15 +59,14 @@ app.post("/login", async (req, res) => {
       return res.status(404).send("User not found");
     } 
     // compare password with hashed password in database using bcrypt npm package
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.validatePassword(password);
     if (!isMatch) {
       return res.status(400).send("Invalid password");
     }   
     // send some dummy token in cookies for authentication (in real application, you should use JWT or similar token)
-    const token = jwt.sign({ id: user._id }, "myjwtsecret", {
-      expiresIn: "1h",
-    });
-    res.cookie("token", token, { httpOnly: true });
+    // expire jwt and cookie after 8 hours
+    const token = user.getJwt(); // generate JWT token using getJwt method defined in user model
+    res.cookie("token", token, { httpOnly: true, expires: new Date(Date.now() + 8 * 60 * 60 * 1000 ) });
     res.send("User logged in successfully!"); 
 } catch (error) {
     console.error("Error logging in user:", error);

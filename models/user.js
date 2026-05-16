@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const validator = require('validator')
+const bcrypt = require('bcrypt');
 const { Schema } = mongoose;
+const jwt = require('jsonwebtoken');
 // add validations to fields as needed, e.g. email format, password strength, etc.
 const userSchema = new Schema({
   firstName: {
@@ -72,4 +74,13 @@ message: 'Password must be at least 8 characters long and include at least one l
  },
 },{timestamps: true});
 
+// add getJwt method to userSchema to generate JWT token for authentication
+userSchema.methods.getJwt = function() {
+  const payload = { id: this._id };
+  return jwt.sign(payload, "myjwtsecret", { expiresIn: '8h' });
+}
+// add validate password method to userSchema to compare provided password with stored encrypted password
+userSchema.methods.validatePassword = function(passwordEnteredByUser) {
+  return bcrypt.compare(passwordEnteredByUser, this.password);
+};
 module.exports = mongoose.model('User', userSchema);
