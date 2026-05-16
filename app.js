@@ -4,10 +4,13 @@ const { adminAuth, userAuth } = require("./middlewares/auth");
 const User = require("./models/user");
 const bcrypt = require("bcrypt");
 const { validatePayload } = require("./utils/validate");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
 connectDB()
   .then(() => {
@@ -60,12 +63,44 @@ app.post("/login", async (req, res) => {
     if (!isMatch) {
       return res.status(400).send("Invalid password");
     }   
+    // send some dummy token in cookies for authentication (in real application, you should use JWT or similar token)
+    const token = jwt.sign({ id: user._id }, "myjwtsecret", {
+      expiresIn: "1h",
+    });
+    res.cookie("token", token, { httpOnly: true });
     res.send("User logged in successfully!"); 
 } catch (error) {
     console.error("Error logging in user:", error);
     res.status(500).send("Error logging in user" + error.message);
   } 
-});            
+}); 
+
+// get profile of logged in user
+// http://localhost:3000/profile
+app.get("/profile", userAuth, async (req, res) => {
+  try { 
+    const userId = req.userId; // userId is set in userAuth middleware after verifying token
+    const user = await User.findById(userId);
+    res.send(user);
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).send("Error fetching profile"+ error.message);
+  }
+});
+
+// add a post method with name sendconnection with logged in user in res
+// http://localhost:3000/sendconnection
+app.post("/sendconnection",userAuth, async (req, res) => {
+  try {  
+    
+    const user =  req.user; // userId is set in userAuth middleware after verifying token
+    res.send({ message: "Connection request sent successfully!-->"+user.firstName });
+  } catch (error) {
+    console.error("Error sending connection request:", error);
+    res.status(500).send("Error sending connection request --->" + error.message);
+  } 
+});
+
 
 // get user by email Id
 // http://localhost:3000/users/john.doe@example.com
