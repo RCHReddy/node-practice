@@ -5,6 +5,10 @@ const User = require("./models/user");
 const bcrypt = require("bcrypt");
 const { validatePayload } = require("./utils/validate");
 const cookieParser = require("cookie-parser");
+//import auth routes,profile routes and request routes
+const profileRouter = require("./routes/profile");
+const requestRouter = require("./routes/request");  
+const authRouter = require("./routes/auth");
 const jwt = require("jsonwebtoken");
 
 const app = express();
@@ -23,82 +27,86 @@ connectDB()
     console.error("Database connection failed:", error);
   });
 
-app.post("/signup", async (req, res) => {
-  console.log("signup route accessed-----", req.body);
+ app.use("/", authRouter); // use auth routes with /auth prefix 
+ app.use("/", profileRouter); // use profile routes with /profile prefix
+ app.use("/", requestRouter); // use request routes with /request prefix
 
-  try {
-    const { firstName, lastName, email, password } = req.body;
-    validatePayload
-    const errors = validatePayload({ firstName, lastName, email, password });
+// // app.post("/signup", async (req, res) => {
+// //   console.log("signup route accessed-----", req.body);
 
-    if (errors) {
-      return res.status(400).send(errors);
-    }
+// //   try {
+// //     const { firstName, lastName, email, password } = req.body;
+// //     validatePayload
+// //     const errors = validatePayload({ firstName, lastName, email, password });
 
-    // hash password before saving to database using bcrypt npm package
-    const hashedPassword = await bcrypt.hash(password, 10);
+// //     if (errors) {
+// //       return res.status(400).send(errors);
+// //     }
 
-    const user = new User({ firstName, lastName, email, password: hashedPassword });
-    await user.save();
-    res.send("user created successfully!");
-  } catch (error) {
-    console.error("Error creating user:", error);
-    res.status(500).send("Error creating user" + error.message);
-  }
-});
-// login user by email and password
-// http://localhost:3000/login
-app.post("/login", async (req, res) => {    
-  console.log("login route accessed-----", req.body);
-  try {
-    const { email, password } = req.body;
-    //  fetch user by email from database
-    const user = await User.findOne({ email }); 
-    // if user not found, return error
-    if (!user) {
-      return res.status(404).send("User not found");
-    } 
-    // compare password with hashed password in database using bcrypt npm package
-    const isMatch = await user.validatePassword(password);
-    if (!isMatch) {
-      return res.status(400).send("Invalid password");
-    }   
-    // send some dummy token in cookies for authentication (in real application, you should use JWT or similar token)
-    // expire jwt and cookie after 8 hours
-    const token = user.getJwt(); // generate JWT token using getJwt method defined in user model
-    res.cookie("token", token, { httpOnly: true, expires: new Date(Date.now() + 8 * 60 * 60 * 1000 ) });
-    res.send("User logged in successfully!"); 
-} catch (error) {
-    console.error("Error logging in user:", error);
-    res.status(500).send("Error logging in user" + error.message);
-  } 
-}); 
+// //     // hash password before saving to database using bcrypt npm package
+// //     const hashedPassword = await bcrypt.hash(password, 10);
 
-// get profile of logged in user
-// http://localhost:3000/profile
-app.get("/profile", userAuth, async (req, res) => {
-  try { 
-    const userId = req.userId; // userId is set in userAuth middleware after verifying token
-    const user = await User.findById(userId);
-    res.send(user);
-  } catch (error) {
-    console.error("Error fetching profile:", error);
-    res.status(500).send("Error fetching profile"+ error.message);
-  }
-});
+// //     const user = new User({ firstName, lastName, email, password: hashedPassword });
+// //     await user.save();
+// //     res.send("user created successfully!");
+// //   } catch (error) {
+// //     console.error("Error creating user:", error);
+// //     res.status(500).send("Error creating user" + error.message);
+// //   }
+// // });
+// // // login user by email and password
+// // // http://localhost:3000/login
+// // app.post("/login", async (req, res) => {    
+// //   console.log("login route accessed-----", req.body);
+// //   try {
+// //     const { email, password } = req.body;
+// //     //  fetch user by email from database
+// //     const user = await User.findOne({ email }); 
+// //     // if user not found, return error
+// //     if (!user) {
+// //       return res.status(404).send("User not found");
+// //     } 
+// //     // compare password with hashed password in database using bcrypt npm package
+// //     const isMatch = await user.validatePassword(password);
+// //     if (!isMatch) {
+// //       return res.status(400).send("Invalid password");
+// //     }   
+// //     // send some dummy token in cookies for authentication (in real application, you should use JWT or similar token)
+// //     // expire jwt and cookie after 8 hours
+// //     const token = user.getJwt(); // generate JWT token using getJwt method defined in user model
+// //     res.cookie("token", token, { httpOnly: true, expires: new Date(Date.now() + 8 * 60 * 60 * 1000 ) });
+// //     res.send("User logged in successfully!"); 
+// // } catch (error) {
+// //     console.error("Error logging in user:", error);
+// //     res.status(500).send("Error logging in user" + error.message);
+// //   } 
+// // }); 
 
-// add a post method with name sendconnection with logged in user in res
-// http://localhost:3000/sendconnection
-app.post("/sendconnection",userAuth, async (req, res) => {
-  try {  
+// // get profile of logged in user
+// // http://localhost:3000/profile
+// app.get("/profile", userAuth, async (req, res) => {
+//   try { 
+//     const userId = req.userId; // userId is set in userAuth middleware after verifying token
+//     const user = await User.findById(userId);
+//     res.send(user);
+//   } catch (error) {
+//     console.error("Error fetching profile:", error);
+//     res.status(500).send("Error fetching profile"+ error.message);
+//   }
+// });
+
+// // add a post method with name sendconnection with logged in user in res
+// // http://localhost:3000/sendconnection
+// app.post("/sendconnection",userAuth, async (req, res) => {
+//   try {  
     
-    const user =  req.user; // userId is set in userAuth middleware after verifying token
-    res.send({ message: "Connection request sent successfully!-->"+user.firstName });
-  } catch (error) {
-    console.error("Error sending connection request:", error);
-    res.status(500).send("Error sending connection request --->" + error.message);
-  } 
-});
+//     const user =  req.user; // userId is set in userAuth middleware after verifying token
+//     res.send({ message: "Connection request sent successfully!-->"+user.firstName });
+//   } catch (error) {
+//     console.error("Error sending connection request:", error);
+//     res.status(500).send("Error sending connection request --->" + error.message);
+//   } 
+// });
 
 
 // get user by email Id

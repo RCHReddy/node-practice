@@ -46,5 +46,11 @@ const validatePayload = (payload) => {
 
     return Object.keys(errors).length > 0 ? errors : null;
 };
+// validate profile update payload
+const validateProfileUpdatePayload = (payload) => {
+   const allowedFields = ["firstName", "lastName", "email", "gender", "age","about","skills","photo"];
+   const isAllowed = Object.keys(payload).every((key) => allowedFields.includes(key));
+   return isAllowed;
+};
 
-module.exports = { validatePayload };
+module.exports = { validatePayload, validateProfileUpdatePayload,validateStrongPassword };
