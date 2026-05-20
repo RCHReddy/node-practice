@@ -49,7 +49,7 @@ profileRouter.patch("/profile/password", userAuth, async (req, res) => {
       return res.status(400).send("Password must contain 8 characters, including uppercase, lowercase, number and symbol");
     } 
     const user = req.user; // user is set in userAuth middleware after verifying token
-    user.password = await bcrypt.hash(password, 10);; // password will be hashed in user model pre save hook
+    user.password = await bcrypt.hash(password, 10); // password will be hashed in user model pre save hook
     await user.save();
     res.send("Password updated successfully!");
   } catch (error) {
