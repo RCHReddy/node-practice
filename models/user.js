@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const { Schema } = mongoose;
 const jwt = require('jsonwebtoken');
 // add validations to fields as needed, e.g. email format, password strength, etc.
+
+
 const userSchema = new Schema({
   firstName: {
     type: String,
@@ -73,6 +75,9 @@ message: 'Password must be at least 8 characters long and include at least one l
   
  },
 },{timestamps: true});
+
+// create index on firstname
+userSchema.index({ firstName: 1 });
 
 // add getJwt method to userSchema to generate JWT token for authentication
 userSchema.methods.getJwt = function() {

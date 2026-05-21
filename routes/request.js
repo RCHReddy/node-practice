@@ -21,8 +21,13 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
     if (!toUser) {
       return res.status(404).send("User not found");
     } 
-    // check if connection request already exists between fromUserId and toUserId
-    const existingRequest = await ConnectionRequestModel.findOne({ fromUserId, toUserId });
+    // check if connection request already exists between fromUserId and toUserId or toUserId and fromUserId
+    const existingRequest = await ConnectionRequestModel.findOne({
+      $or: [
+        { fromUserId, toUserId },
+        { fromUserId: toUserId, toUserId: fromUserId }
+      ]
+    });
     if (existingRequest) {
       return res.status(400).send("Connection request already exists");
     }

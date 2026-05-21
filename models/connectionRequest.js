@@ -19,6 +19,14 @@ const connectionRequestSchema = new mongoose.Schema({
       }
     }
 });
-
+// create index to mke db queries faster for fromUserId and toUserId
+connectionRequestSchema.index({ fromUserId: 1, toUserId: 1 }, { unique: true });
+// add pre schema middleware to check if fromUserId and toUserId are the same before saving connection request
+connectionRequestSchema.pre("save", async function (next) {
+  if (this.fromUserId.toString() === this.toUserId.toString()) {
+    return next(new Error("You cannot send connection request to yourself"));
+  }
+  next();
+});
 const ConnectionRequestModel = mongoose.model("ConnectionRequest", connectionRequestSchema);
 module.exports = ConnectionRequestModel;
