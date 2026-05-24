@@ -46,6 +46,33 @@ requestRouter.post("/request/send/:status/:toUserId", userAuth, async (req, res)
   }
 });
 
+
+//add a post method to review the connection request with status and request id in req params
+// http://localhost:3000/request/review/:requestId/:status
+requestRouter.post("/request/review/:requestId/:status", userAuth, async (req, res) => {
+  try {
+    const { requestId, status } = req.params;
+    const allowedStatuses = ["accepted", "rejected"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).send("Invalid status. Allowed statuses are: accepted, rejected");
+    }
+    const { _id: userId } = req.user;
+    const request = await ConnectionRequestModel.findById(requestId);
+    if (!request) {
+      return res.status(404).send("Connection request not found");
+    }
+    if (request.toUserId.toString() !== userId.toString()) {
+      return res.status(403).send("You are not the recipient of this connection request");
+    }
+    request.status = status;
+    await request.save();
+    res.send(`Connection request ${requestId} updated successfully with status ${status}`);
+  } catch (error) {
+    console.error("Error reviewing connection request:", error);
+    res.status(500).send("Error reviewing connection request --->" + error.message);
+  }
+});
+
 // add a post method with name sendconnection with logged in user in res
 // http://localhost:3000/sendconnection
 requestRouter.post("/sendconnection",userAuth, async (req, res) => {

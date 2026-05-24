@@ -9,7 +9,9 @@ const cookieParser = require("cookie-parser");
 const profileRouter = require("./routes/profile");
 const requestRouter = require("./routes/request");  
 const authRouter = require("./routes/auth");
+const userRouter = require("./routes/user");
 const jwt = require("jsonwebtoken");
+
 
 const app = express();
 
@@ -30,6 +32,7 @@ connectDB()
  app.use("/", authRouter); // use auth routes with /auth prefix 
  app.use("/", profileRouter); // use profile routes with /profile prefix
  app.use("/", requestRouter); // use request routes with /request prefix
+ app.use("/", userRouter);
 
 // // app.post("/signup", async (req, res) => {
 // //   console.log("signup route accessed-----", req.body);

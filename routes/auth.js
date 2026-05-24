@@ -9,9 +9,9 @@ authRouter.post("/signup", async (req, res) => {
   console.log("signup route accessed-----", req.body);
 
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password, gender } = req.body;
     validatePayload
-    const errors = validatePayload({ firstName, lastName, email, password });
+    const errors = validatePayload({ firstName, lastName, email, password, gender });
 
     if (errors) {
       return res.status(400).send(errors);
@@ -20,7 +20,7 @@ authRouter.post("/signup", async (req, res) => {
     // hash password before saving to database using bcrypt npm package
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({ firstName, lastName, email, password: hashedPassword });
+    const user = new User({ firstName, lastName, email, password: hashedPassword, gender });
     await user.save();
     res.send("user created successfully!");
   } catch (error) {
