@@ -11,10 +11,15 @@ const requestRouter = require("./routes/request");
 const authRouter = require("./routes/auth");
 const userRouter = require("./routes/user");
 const jwt = require("jsonwebtoken");
-
+const cors = require("cors");
 
 const app = express();
+const corsOptions = {
+  origin: "http://localhost:5173",
+    credentials: true,
+}
 
+app.use(cors(corsOptions)); // enable CORS for all routes
 app.use(express.json());
 app.use(cookieParser());
 

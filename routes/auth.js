@@ -49,7 +49,7 @@ authRouter.post("/login", async (req, res) => {
     // expire jwt and cookie after 8 hours
     const token = user.getJwt(); // generate JWT token using getJwt method defined in user model
     res.cookie("token", token, { httpOnly: true, expires: new Date(Date.now() + 8 * 60 * 60 * 1000 ) });
-    res.send("User logged in successfully!"); 
+    res.send(user); 
 } catch (error) {
     console.error("Error logging in user:", error);
     res.status(500).send("Error logging in user" + error.message);
