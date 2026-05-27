@@ -38,12 +38,12 @@ authRouter.post("/login", async (req, res) => {
     const user = await User.findOne({ email }); 
     // if user not found, return error
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).json({ message: "User not found" });
     } 
     // compare password with hashed password in database using bcrypt npm package
     const isMatch = await user.validatePassword(password);
     if (!isMatch) {
-      return res.status(400).send("Invalid password");
+      return res.status(400).json({ message: "Invalid credentials" });
     }   
     // send some dummy token in cookies for authentication (in real application, you should use JWT or similar token)
     // expire jwt and cookie after 8 hours
@@ -52,7 +52,7 @@ authRouter.post("/login", async (req, res) => {
     res.send(user); 
 } catch (error) {
     console.error("Error logging in user:", error);
-    res.status(500).send("Error logging in user" + error.message);
+    res.status(500).json({ message: "Error logging in user" });
   } 
 });     
 
