@@ -22,7 +22,7 @@ userRouter.get("/user/requests/received", userAuth, async (req, res) => {
     console.error("Error fetching received requests:", error);
     res
       .status(500)
-      .send("Error fetching received requests --->" + error.message);
+      .json("Error fetching received requests --->" + error.message);
   }
 });
 
@@ -57,7 +57,7 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
     console.error("Error fetching connections:", error);
     return res
       .status(500)
-      .send("Error fetching connections ---> " + error.message);
+      .json("Error fetching connections ---> " + error.message);
   }
 });
 
