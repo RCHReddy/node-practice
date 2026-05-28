@@ -23,6 +23,7 @@ profileRouter.get("/profile/view", userAuth, async (req, res) => {
 // http://localhost:3000/profile/update
 profileRouter.patch("/profile/update", userAuth, async (req, res) => {
   try {
+    
     const isValidPayload = validateProfileUpdatePayload(req.body);
     if (!isValidPayload) {
       return res.status(400).send("Invalid payload. Only firstName, lastName, email, gender, age, about, skills and photo fields are allowed for update.");
@@ -31,10 +32,16 @@ profileRouter.patch("/profile/update", userAuth, async (req, res) => {
     const updates = req.body;
     Object.assign(user, updates);
     await user.save();
-    res.send(user);
+    // send json response with updated user details except password
+    res.status(200).json({
+      user:user.toJSON(), // toJSON method in user model will remove password field from response
+      message: "Profile updated successfully!"
+    });
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.status(500).send("Error updating profile" + error.message);
+    res.status(500).json({
+      error: "Error updating profile" + error.message
+    });
   }
 }); 
 
@@ -51,10 +58,14 @@ profileRouter.patch("/profile/password", userAuth, async (req, res) => {
     const user = req.user; // user is set in userAuth middleware after verifying token
     user.password = await bcrypt.hash(password, 10); // password will be hashed in user model pre save hook
     await user.save();
-    res.send("Password updated successfully!");
+    res.status(200).json({
+      message: "Password updated successfully!"
+    });
   } catch (error) {
     console.error("Error updating password:", error);
-    res.status(500).send("Error updating password" + error.message);
+    res.status(500).json({
+      error: "Error updating password" + error.message
+    });
   }  
 });  
 

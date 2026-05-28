@@ -1,278 +1,279 @@
-const express = require("express");
-const connectDB = require("./config/database");
-const { adminAuth, userAuth } = require("./middlewares/auth");
-const User = require("./models/user");
-const bcrypt = require("bcrypt");
-const { validatePayload } = require("./utils/validate");
-const cookieParser = require("cookie-parser");
-//import auth routes,profile routes and request routes
-const profileRouter = require("./routes/profile");
-const requestRouter = require("./routes/request");  
-const authRouter = require("./routes/auth");
-const userRouter = require("./routes/user");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
+  const express = require("express");
+  const connectDB = require("./config/database");
+  const { adminAuth, userAuth } = require("./middlewares/auth");
+  const User = require("./models/user");
+  const bcrypt = require("bcrypt");
+  const { validatePayload } = require("./utils/validate");
+  const cookieParser = require("cookie-parser");
+  //import auth routes,profile routes and request routes
+  const profileRouter = require("./routes/profile");
+  const requestRouter = require("./routes/request");  
+  const authRouter = require("./routes/auth");
+  const userRouter = require("./routes/user");
+  const jwt = require("jsonwebtoken");
+  const cors = require("cors");
 
-const app = express();
-const corsOptions = {
-  origin: "http://localhost:5173",
-    credentials: true,
-}
+  const app = express();
+  const corsOptions = {
+    origin: "http://localhost:5173",
+      credentials: true,
+       methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  }
 
-app.use(cors(corsOptions)); // enable CORS for all routes
-app.use(express.json());
-app.use(cookieParser());
+ app.use(cors(corsOptions));
+  app.use(express.json());
+  app.use(cookieParser());
 
-connectDB()
-  .then(() => {
-    console.log("Database connected successfully");
-    app.listen(3000, () => {
-      console.log("Server started listening on port:3000");
+  connectDB()
+    .then(() => {
+      console.log("Database connected successfully");
+      app.listen(3000, () => {
+        console.log("Server started listening on port:3000");
+      });
+    })
+    .catch((error) => {
+      console.error("Database connection failed:", error);
     });
-  })
-  .catch((error) => {
-    console.error("Database connection failed:", error);
+
+  app.use("/", authRouter); // use auth routes with /auth prefix 
+  app.use("/", profileRouter); // use profile routes with /profile prefix
+  app.use("/", requestRouter); // use request routes with /request prefix
+  app.use("/", userRouter);
+
+  // // app.post("/signup", async (req, res) => {
+  // //   console.log("signup route accessed-----", req.body);
+
+  // //   try {
+  // //     const { firstName, lastName, email, password } = req.body;
+  // //     validatePayload
+  // //     const errors = validatePayload({ firstName, lastName, email, password });
+
+  // //     if (errors) {
+  // //       return res.status(400).send(errors);
+  // //     }
+
+  // //     // hash password before saving to database using bcrypt npm package
+  // //     const hashedPassword = await bcrypt.hash(password, 10);
+
+  // //     const user = new User({ firstName, lastName, email, password: hashedPassword });
+  // //     await user.save();
+  // //     res.send("user created successfully!");
+  // //   } catch (error) {
+  // //     console.error("Error creating user:", error);
+  // //     res.status(500).send("Error creating user" + error.message);
+  // //   }
+  // // });
+  // // // login user by email and password
+  // // // http://localhost:3000/login
+  // // app.post("/login", async (req, res) => {    
+  // //   console.log("login route accessed-----", req.body);
+  // //   try {
+  // //     const { email, password } = req.body;
+  // //     //  fetch user by email from database
+  // //     const user = await User.findOne({ email }); 
+  // //     // if user not found, return error
+  // //     if (!user) {
+  // //       return res.status(404).send("User not found");
+  // //     } 
+  // //     // compare password with hashed password in database using bcrypt npm package
+  // //     const isMatch = await user.validatePassword(password);
+  // //     if (!isMatch) {
+  // //       return res.status(400).send("Invalid password");
+  // //     }   
+  // //     // send some dummy token in cookies for authentication (in real application, you should use JWT or similar token)
+  // //     // expire jwt and cookie after 8 hours
+  // //     const token = user.getJwt(); // generate JWT token using getJwt method defined in user model
+  // //     res.cookie("token", token, { httpOnly: true, expires: new Date(Date.now() + 8 * 60 * 60 * 1000 ) });
+  // //     res.send("User logged in successfully!"); 
+  // // } catch (error) {
+  // //     console.error("Error logging in user:", error);
+  // //     res.status(500).send("Error logging in user" + error.message);
+  // //   } 
+  // // }); 
+
+  // // get profile of logged in user
+  // // http://localhost:3000/profile
+  // app.get("/profile", userAuth, async (req, res) => {
+  //   try { 
+  //     const userId = req.userId; // userId is set in userAuth middleware after verifying token
+  //     const user = await User.findById(userId);
+  //     res.send(user);
+  //   } catch (error) {
+  //     console.error("Error fetching profile:", error);
+  //     res.status(500).send("Error fetching profile"+ error.message);
+  //   }
+  // });
+
+  // // add a post method with name sendconnection with logged in user in res
+  // // http://localhost:3000/sendconnection
+  // app.post("/sendconnection",userAuth, async (req, res) => {
+  //   try {  
+      
+  //     const user =  req.user; // userId is set in userAuth middleware after verifying token
+  //     res.send({ message: "Connection request sent successfully!-->"+user.firstName });
+  //   } catch (error) {
+  //     console.error("Error sending connection request:", error);
+  //     res.status(500).send("Error sending connection request --->" + error.message);
+  //   } 
+  // });
+
+
+  // get user by email Id
+  // http://localhost:3000/users/john.doe@example.com
+  app.get("/users/:email", async (req, res) => {
+    try {
+      const user = await User.findOne({ email: req.params.email });
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
+      res.send(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).send("Error fetching user");
+    }
   });
 
- app.use("/", authRouter); // use auth routes with /auth prefix 
- app.use("/", profileRouter); // use profile routes with /profile prefix
- app.use("/", requestRouter); // use request routes with /request prefix
- app.use("/", userRouter);
-
-// // app.post("/signup", async (req, res) => {
-// //   console.log("signup route accessed-----", req.body);
-
-// //   try {
-// //     const { firstName, lastName, email, password } = req.body;
-// //     validatePayload
-// //     const errors = validatePayload({ firstName, lastName, email, password });
-
-// //     if (errors) {
-// //       return res.status(400).send(errors);
-// //     }
-
-// //     // hash password before saving to database using bcrypt npm package
-// //     const hashedPassword = await bcrypt.hash(password, 10);
-
-// //     const user = new User({ firstName, lastName, email, password: hashedPassword });
-// //     await user.save();
-// //     res.send("user created successfully!");
-// //   } catch (error) {
-// //     console.error("Error creating user:", error);
-// //     res.status(500).send("Error creating user" + error.message);
-// //   }
-// // });
-// // // login user by email and password
-// // // http://localhost:3000/login
-// // app.post("/login", async (req, res) => {    
-// //   console.log("login route accessed-----", req.body);
-// //   try {
-// //     const { email, password } = req.body;
-// //     //  fetch user by email from database
-// //     const user = await User.findOne({ email }); 
-// //     // if user not found, return error
-// //     if (!user) {
-// //       return res.status(404).send("User not found");
-// //     } 
-// //     // compare password with hashed password in database using bcrypt npm package
-// //     const isMatch = await user.validatePassword(password);
-// //     if (!isMatch) {
-// //       return res.status(400).send("Invalid password");
-// //     }   
-// //     // send some dummy token in cookies for authentication (in real application, you should use JWT or similar token)
-// //     // expire jwt and cookie after 8 hours
-// //     const token = user.getJwt(); // generate JWT token using getJwt method defined in user model
-// //     res.cookie("token", token, { httpOnly: true, expires: new Date(Date.now() + 8 * 60 * 60 * 1000 ) });
-// //     res.send("User logged in successfully!"); 
-// // } catch (error) {
-// //     console.error("Error logging in user:", error);
-// //     res.status(500).send("Error logging in user" + error.message);
-// //   } 
-// // }); 
-
-// // get profile of logged in user
-// // http://localhost:3000/profile
-// app.get("/profile", userAuth, async (req, res) => {
-//   try { 
-//     const userId = req.userId; // userId is set in userAuth middleware after verifying token
-//     const user = await User.findById(userId);
-//     res.send(user);
-//   } catch (error) {
-//     console.error("Error fetching profile:", error);
-//     res.status(500).send("Error fetching profile"+ error.message);
-//   }
-// });
-
-// // add a post method with name sendconnection with logged in user in res
-// // http://localhost:3000/sendconnection
-// app.post("/sendconnection",userAuth, async (req, res) => {
-//   try {  
-    
-//     const user =  req.user; // userId is set in userAuth middleware after verifying token
-//     res.send({ message: "Connection request sent successfully!-->"+user.firstName });
-//   } catch (error) {
-//     console.error("Error sending connection request:", error);
-//     res.status(500).send("Error sending connection request --->" + error.message);
-//   } 
-// });
-
-
-// get user by email Id
-// http://localhost:3000/users/john.doe@example.com
-app.get("/users/:email", async (req, res) => {
-  try {
-    const user = await User.findOne({ email: req.params.email });
-    if (!user) {
-      return res.status(404).send("User not found");
+  // update user by userId
+  // http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
+  app.patch("/users/:id", async (req, res) => {
+    try {
+      const ALLOWED_UPDATES = [
+        "name",
+        "password",
+        "age",
+        "photo",
+        "about",
+        "gender",
+      ];
+      const updates = Object.keys(req.body);
+      const isValidOperation = updates.every((update) =>
+        ALLOWED_UPDATES.includes(update),
+      );
+      if (!isValidOperation) {
+        return res.status(400).send("Invalid update fields");
+      }
+      const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+      });
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
+      console.log("updated user:", user);
+      res.send(user);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).send("Error updating user");
     }
-    res.send(user);
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    res.status(500).send("Error fetching user");
-  }
-});
+  });
 
-// update user by userId
-// http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
-app.patch("/users/:id", async (req, res) => {
-  try {
-    const ALLOWED_UPDATES = [
-      "name",
-      "password",
-      "age",
-      "photo",
-      "about",
-      "gender",
-    ];
-    const updates = Object.keys(req.body);
-    const isValidOperation = updates.every((update) =>
-      ALLOWED_UPDATES.includes(update),
-    );
-    if (!isValidOperation) {
-      return res.status(400).send("Invalid update fields");
+  // update user by email Id
+  // http://localhost:3000/users/email/john.doe@example.com
+  app.patch("/users/email/:email", async (req, res) => {
+    try {
+      const email = decodeURIComponent(req.params.email);
+      console.log("req.params.email,req.body-----", email, req.body);
+      const user = await User.findOneAndUpdate({ email }, req.body, {
+        new: true,
+        runValidators: true,
+      });
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
+      console.log("updated user:", user);
+      res.send(user);
+    } catch (error) {
+      console.error("Error updating user:", error.message);
+      res.status(400).send({ error: error.message });
     }
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!user) {
-      return res.status(404).send("User not found");
+  });
+
+  // delete user by userId
+  // http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
+  app.delete("/users/:id", async (req, res) => {
+    try {
+      const user = await User.findByIdAndDelete(req.params.id);
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
+      res.send("User deleted successfully");
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).send("Error deleting user");
     }
-    console.log("updated user:", user);
-    res.send(user);
-  } catch (error) {
-    console.error("Error updating user:", error);
-    res.status(500).send("Error updating user");
-  }
-});
+  });
 
-// update user by email Id
-// http://localhost:3000/users/email/john.doe@example.com
-app.patch("/users/email/:email", async (req, res) => {
-  try {
-    const email = decodeURIComponent(req.params.email);
-    console.log("req.params.email,req.body-----", email, req.body);
-    const user = await User.findOneAndUpdate({ email }, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!user) {
-      return res.status(404).send("User not found");
+  // get all users feed api
+  // http://localhost:3000/users
+  app.get("/users", async (req, res) => {
+    try {
+      const users = await User.find();
+      if (users.length === 0) {
+        return res.status(404).send("No users found");
+      }
+      res.send(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).send("Error fetching users");
     }
-    console.log("updated user:", user);
-    res.send(user);
-  } catch (error) {
-    console.error("Error updating user:", error.message);
-    res.status(400).send({ error: error.message });
-  }
-});
+  });
 
-// delete user by userId
-// http://localhost:3000/users/64b8c9f1e5a4c2d3f8a9b0c
-app.delete("/users/:id", async (req, res) => {
-  try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-    res.send("User deleted successfully");
-  } catch (error) {
-    console.error("Error deleting user:", error);
-    res.status(500).send("Error deleting user");
-  }
-});
+  // app.use("/admin",adminAuth,(req,res,next)=>{
+  // console.log('admin route accessed');
+  // res.send('welcome admin!');
+  // });
 
-// get all users feed api
-// http://localhost:3000/users
-app.get("/users", async (req, res) => {
-  try {
-    const users = await User.find();
-    if (users.length === 0) {
-      return res.status(404).send("No users found");
-    }
-    res.send(users);
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).send("Error fetching users");
-  }
-});
+  // app.use('/user/getdata',(req,res)=>{
+  //     throw new Error('Something went wrong while fetching user data!');
+  //     res.send('welcome user to get data!',{name:'john',age:30});
+  // });
 
-// app.use("/admin",adminAuth,(req,res,next)=>{
-// console.log('admin route accessed');
-// res.send('welcome admin!');
-// });
+  // app.use("/user",userAuth,(req,res,next)=>{
+  // console.log('user route accessed');
+  //     res.send('welcome user!');
+  // });
 
-// app.use('/user/getdata',(req,res)=>{
-//     throw new Error('Something went wrong while fetching user data!');
-//     res.send('welcome user to get data!',{name:'john',age:30});
-// });
+  // app.use("/",(err,req,res,next)=>{
+  //     if(err){
+  //         console.error(err.stack);
+  //         res.status(500).send('Something went wrong!');
+  //     } else {
+  //         next();
+  //     }
+  // });
 
-// app.use("/user",userAuth,(req,res,next)=>{
-// console.log('user route accessed');
-//     res.send('welcome user!');
-// });
+  // app.use('/user',[(req,res,next)=>{
+  //     console.log('first ');
+  //     next();
+  // },(req,res,next)=>{
+  //     console.log('second');
+  //    next();
+  // }],(req,res,next)=>{
+  //     next();
+  //     console.log('third');
 
-// app.use("/",(err,req,res,next)=>{
-//     if(err){
-//         console.error(err.stack);
-//         res.status(500).send('Something went wrong!');
-//     } else {
-//         next();
-//     }
-// });
+  //    res.send('hello world! 3rd method');
+  //    //next();
+  // },
+  // (req,res,next)=>{
+  //     console.log('fourth');
+  //    res.send('hello world! 4th method');
+  // }
+  // );
 
-// app.use('/user',[(req,res,next)=>{
-//     console.log('first ');
-//     next();
-// },(req,res,next)=>{
-//     console.log('second');
-//    next();
-// }],(req,res,next)=>{
-//     next();
-//     console.log('third');
+  // app.get('/hello/:name/:id/:city',(req,res)=>{
+  //     console.log(req.params);
+  //     res.send('hello world! through get method');
+  // });
 
-//    res.send('hello world! 3rd method');
-//    //next();
-// },
-// (req,res,next)=>{
-//     console.log('fourth');
-//    res.send('hello world! 4th method');
-// }
-// );
+  // app.get('/hello',(req,res)=>{
+  //     console.log(req.query);
+  // res.send('would like to say hello!1213');
+  // });
 
-// app.get('/hello/:name/:id/:city',(req,res)=>{
-//     console.log(req.params);
-//     res.send('hello world! through get method');
-// });
+  // app.use('/test',(req,res)=>{
+  // res.send('lets test!');
+  // });
 
-// app.get('/hello',(req,res)=>{
-//     console.log(req.query);
-// res.send('would like to say hello!1213');
-// });
-
-// app.use('/test',(req,res)=>{
-// res.send('lets test!');
-// });
-
-// app.use('/',(req,res)=>{
-// res.send('welcome to home!');
-// });
+  // app.use('/',(req,res)=>{
+  // res.send('welcome to home!');
+  // });

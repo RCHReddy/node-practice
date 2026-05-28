@@ -5,7 +5,7 @@ const ConnectionRequestModel = require("../models/connectionRequest");
 const { userAuth } = require("../middlewares/auth");
 const userRouter = express.Router();
 
-const SELECTED_USER_FIELDS = "firstName lastName email photo gender";
+const SELECTED_USER_FIELDS = "firstName lastName email photo gender age";
 // creat ea get method to get all  requests for logged in user which are in interested status
 // these requests are pending and to be marked as accepted or rejected by logged in user
 // http://localhost:3000/user/requests/received
