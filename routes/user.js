@@ -17,7 +17,7 @@ userRouter.get("/user/requests/received", userAuth, async (req, res) => {
       toUserId: userId,
       status: "interested",
     }).populate("fromUserId", SELECTED_USER_FIELDS);
-    res.status(200).send(requests);
+    res.status(200).json({requests});
   } catch (error) {
     console.error("Error fetching received requests:", error);
     res
